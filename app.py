@@ -1,13 +1,13 @@
 """Provenance Guard — Flask API.
 
-Milestone 3 scope:
-  - POST /submit : accepts {text, creator_id}, runs Signal 1 (LLM), writes a
-    structured audit entry, returns {content_id, attribution, confidence, label}.
+Endpoints:
+  - POST /submit : accepts {text, creator_id}, runs both detection signals
+    (LLM + stylometric), combines them into a calibrated confidence score,
+    writes a structured audit entry, and returns {content_id, attribution,
+    confidence, label, signals}. Rate-limited at 5/min + 50/day per IP.
+  - POST /appeal : accepts {content_id, creator_reasoning}, flips the content's
+    status to under_review, and logs the appeal beside the original decision.
   - GET  /log    : returns recent audit-log entries as JSON.
-
-Confidence scoring (Signal 2 + combined score) and the real transparency labels
-arrive in Milestones 4–5. For now confidence and label are placeholders, and
-attribution is derived from the single LLM signal.
 """
 
 import uuid
