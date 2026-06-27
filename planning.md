@@ -180,5 +180,3 @@ For each implementation milestone, the spec sections below (plus the architectur
 - **Spec provided:** §3 Label variants + §4 Appeals workflow + the Appeal-flow diagram.
 - **Ask the AI to generate:** (1) `generate_label(attribution, confidence)` mapping verdict+confidence to the exact text in §3, and (2) the `POST /appeal` endpoint per §4.
 - **Verify:** Ask the AI to print all three label variants and confirm the text matches §3 verbatim. Confirm an appeal updates `status` to `under_review` and logs alongside the original decision before considering it done. Confirm all three labels are reachable via inputs at different confidence levels.
-
-> **Note:** This `planning.md` will be updated *before* starting any stretch feature, per the project requirements.
