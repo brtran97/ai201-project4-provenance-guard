@@ -4,3 +4,11 @@
 #Project directions
 project.md
 rubric.md
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Database
+*.db
