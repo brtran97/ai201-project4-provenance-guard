@@ -8,6 +8,8 @@ Signal 2 (stylometric heuristics) is added in Milestone 4.
 
 import json
 import os
+import re
+from statistics import pstdev
 
 from dotenv import load_dotenv
 from groq import Groq
@@ -68,6 +70,77 @@ def llm_signal(text):
             "llm_score": 0.5,
             "rationale": f"LLM signal unavailable, defaulting to neutral ({exc}).",
         }
+
+
+# ---------------------------------------------------------------------------
+# Signal 2 — Stylometric heuristics (pure Python, no external libraries)
+# ---------------------------------------------------------------------------
+
+def _clamp(x, lo=0.0, hi=1.0):
+    return max(lo, min(hi, x))
+
+
+def _split_sentences(text):
+    parts = re.split(r"[.!?]+", text)
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _tokenize_words(text):
+    return re.findall(r"[A-Za-z']+", text.lower())
+
+
+def stylometric_signal(text):
+    """Return a dict with the combined stylometric_score and its sub-metrics.
+
+    Each sub-metric is normalized to an AI-likeness score in [0,1] where 1 means
+    'statistically AI-like' (i.e. uniform / low-diversity / evenly punctuated).
+    Combined per planning.md §1: 0.5*burstiness + 0.25*ttr + 0.25*punctuation.
+
+    Mappings (heuristic bounds, tuned on the M4 calibration inputs):
+      burstiness   = std-dev of per-sentence word counts -> 1 - std/8   (uniform = AI)
+      ttr          = unique/total words                  -> (0.72-ttr)/0.27 (low diversity = AI)
+      punctuation  = punctuation marks / words           -> density/0.15  (dense, even = AI)
+    """
+    words = _tokenize_words(text)
+    sentences = _split_sentences(text)
+    word_count = len(words)
+
+    # --- Burstiness: std-dev of sentence lengths (in words) ---
+    sent_lengths = [len(_tokenize_words(s)) for s in sentences]
+    if len(sent_lengths) >= 2:
+        std = pstdev(sent_lengths)
+        burstiness = _clamp(1.0 - std / 8.0)
+    else:
+        # One sentence (or none): no variance to measure -> maximally uniform.
+        burstiness = 1.0
+
+    # --- Type-token ratio: vocabulary diversity ---
+    if word_count > 0:
+        ttr = len(set(words)) / word_count
+        ai_ttr = _clamp((0.72 - ttr) / 0.27)
+    else:
+        ttr = 0.0
+        ai_ttr = 0.5
+
+    # --- Punctuation density: marks per word ---
+    punct_marks = len(re.findall(r"[,.;:!?\"'()\-—]", text))
+    density = punct_marks / word_count if word_count else 0.0
+    ai_punct = _clamp(density / 0.15)
+
+    stylometric_score = 0.5 * burstiness + 0.25 * ai_ttr + 0.25 * ai_punct
+
+    return {
+        "stylometric_score": round(stylometric_score, 4),
+        "word_count": word_count,
+        "metrics": {
+            "sentence_length_std": round(std, 3) if len(sent_lengths) >= 2 else None,
+            "burstiness_ai": round(burstiness, 4),
+            "type_token_ratio": round(ttr, 4),
+            "ttr_ai": round(ai_ttr, 4),
+            "punctuation_density": round(density, 4),
+            "punctuation_ai": round(ai_punct, 4),
+        },
+    }
 
 
 if __name__ == "__main__":

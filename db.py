@@ -36,6 +36,7 @@ def init_db():
                 timestamp          TEXT,
                 attribution        TEXT,
                 confidence         REAL,
+                combined_score     REAL,
                 llm_score          REAL,
                 stylometric_score  REAL,
                 status             TEXT
@@ -52,6 +53,7 @@ def init_db():
                 timestamp          TEXT,
                 attribution        TEXT,
                 confidence         REAL,
+                combined_score     REAL,
                 llm_score          REAL,
                 stylometric_score  REAL,
                 status             TEXT,
@@ -72,10 +74,10 @@ def record_submission(record):
             """
             INSERT INTO submissions
                 (content_id, creator_id, text, timestamp, attribution,
-                 confidence, llm_score, stylometric_score, status)
+                 confidence, combined_score, llm_score, stylometric_score, status)
             VALUES
                 (:content_id, :creator_id, :text, :timestamp, :attribution,
-                 :confidence, :llm_score, :stylometric_score, :status)
+                 :confidence, :combined_score, :llm_score, :stylometric_score, :status)
             """,
             record,
         )
@@ -83,11 +85,12 @@ def record_submission(record):
             """
             INSERT INTO audit_log
                 (content_id, creator_id, event_type, timestamp, attribution,
-                 confidence, llm_score, stylometric_score, status, appeal_reasoning)
+                 confidence, combined_score, llm_score, stylometric_score,
+                 status, appeal_reasoning)
             VALUES
                 (:content_id, :creator_id, 'classification', :timestamp,
-                 :attribution, :confidence, :llm_score, :stylometric_score,
-                 :status, NULL)
+                 :attribution, :confidence, :combined_score, :llm_score,
+                 :stylometric_score, :status, NULL)
             """,
             record,
         )
@@ -122,9 +125,10 @@ def record_appeal(content_id, creator_reasoning, timestamp):
             """
             INSERT INTO audit_log
                 (content_id, creator_id, event_type, timestamp, attribution,
-                 confidence, llm_score, stylometric_score, status, appeal_reasoning)
+                 confidence, combined_score, llm_score, stylometric_score,
+                 status, appeal_reasoning)
             VALUES
-                (?, ?, 'appeal', ?, ?, ?, ?, ?, 'under_review', ?)
+                (?, ?, 'appeal', ?, ?, ?, ?, ?, ?, 'under_review', ?)
             """,
             (
                 content_id,
@@ -132,6 +136,7 @@ def record_appeal(content_id, creator_reasoning, timestamp):
                 timestamp,
                 original["attribution"],
                 original["confidence"],
+                original["combined_score"],
                 original["llm_score"],
                 original["stylometric_score"],
                 creator_reasoning,

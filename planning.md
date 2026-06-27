@@ -27,6 +27,13 @@ Three measurable statistical properties, each computed without external librarie
 | **Type-token ratio** (vocabulary diversity) | Unique words ÷ total words | Human writing reuses and repeats idiosyncratically; AI tends toward smooth, moderately-diverse vocabulary. |
 | **Punctuation density** | Punctuation marks ÷ words | AI over-uses commas/semicolons in an even, "grammatically correct" rhythm; human casual writing is more erratic. |
 
+- **Normalization (each metric → AI-likeness sub-score in [0,1], 1 = AI-like):**
+  - Burstiness = std-dev of per-sentence word counts → `clamp(1 − std/8, 0, 1)` (uniform = AI).
+  - TTR = unique ÷ total words → `clamp((0.72 − ttr)/0.27, 0, 1)` (low diversity = AI).
+  - Punctuation density = marks ÷ words → `clamp(density/0.15, 0, 1)` (dense, even = AI).
+  - *(These bounds are heuristic and tuned against the four M4 calibration inputs.)*
+- **Combining the three metrics:** burstiness-weighted, **not** a flat average, because burstiness is the most defensible of the three and TTR/punctuation are noisier:
+  `stylometric_score = 0.5·burstiness + 0.25·ttr + 0.25·punctuation`.
 - **Output shape:** a float `stylometric_score ∈ [0, 1]` (1 = statistically AI-like — i.e. *uniform*) plus the three raw sub-metrics for transparency in the log.
 - **Why it differs between human and AI:** AI text optimizes for fluent averageness, which shows up as low variance and even punctuation. Human text is statistically "lumpier."
 - **Blind spots:** Unreliable on **short text** (a 2-sentence submission has almost no variance to measure). It is **content-blind** — it can't tell deliberate stylistic uniformity (a minimalist poem, a legal notice) from AI uniformity, so it will false-positive on intentionally repetitive or simple writing.
@@ -40,6 +47,8 @@ S = 0.7 · llm_score + 0.3 · stylometric_score
 ```
 
 The LLM is weighted heavier (0.7) because it is the stronger, semantically-aware signal; stylometrics (0.3) acts as a structural sanity check and tie-breaker. Both sub-scores are always recorded in the audit log so the combination is fully traceable.
+
+**Short-text exception.** For submissions under ~40 words, stylometrics has too little text to measure reliably (a 1–2 sentence input has almost no variance). In that case the blend shifts to `S = 0.9·llm + 0.1·stylo`, leaning on the LLM rather than trusting noisy structural numbers. *(This rule was added during M4 — see the README spec reflection.)*
 
 ---
 
