@@ -4,6 +4,7 @@ A backend system that any creative-sharing platform could plug into to classify 
 
 > **Design principle that drives everything here:** on a writing platform, a *false positive* — flagging a human's own work as AI-generated — is the costly error. It insults the creator and erodes trust. So the system is deliberately biased to protect against it: a high bar before it says "AI," a wide "uncertain" band, and an appeal path built for exactly the cases it gets wrong.
 
+### [Short video Walkthrough](https://drive.google.com/file/d/1weSx_ncVh5DBD_U1cMU8ASueQriXVOw-/view?usp=sharing)
 ---
 
 ## Table of contents
